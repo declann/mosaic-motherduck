@@ -2,11 +2,15 @@ import { MDConnection } from "@motherduck/wasm-client";
 import * as vg from "@uwdata/vgplot";
 import { token } from "./token.js";
 import * as arrow from "apache-arrow";
+import * as flechette from "@uwdata/flechette";
 
 async function arrowTableFromResult(result) {
   if (result.type === "streaming") {
     const batches = await result.arrowStream.readAll();
-    return new arrow.Table(batches);
+    // very bad:
+    const old = new arrow.Table(batches)
+    const data = arrow.tableToIPC(old);
+    return new flechette.tableFromIPC(data)
   }
   throw Error("expected streaming result");
 }
@@ -38,7 +42,7 @@ const app = document.querySelector("#app");
 
 vg.coordinator().databaseConnector(connector);
 
-const table = "s.main.gaia_sample_1_percent_projected"
+const table = "my_db.main.gaia_projected_small" // todo document making this table "s.main.gaia_sample_1_percent_projected"
 
 const size = await connector.query({ sql: `SELECT COUNT(*) as cnt FROM ${table.split(".").map(s => `"${s}"`).join(".")}`, type: "arrow" })
 
